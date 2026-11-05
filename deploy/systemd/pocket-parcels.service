@@ -1,0 +1,23 @@
+[Unit]
+Description=Pocket Parcels — follow every parcel in one place
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pocket-parcels
+Group=pocket-parcels
+ExecStart=/usr/local/bin/pocket-parcels
+Environment=DATA_DIR=/var/lib/pocket-parcels
+Environment=PORT=8080
+Environment=BASE_URL=https://parcels.example.com
+Environment=SECURE_COOKIES=true
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pocket-parcels
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

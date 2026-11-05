@@ -1,0 +1,5 @@
+# Pocket Parcels behind Caddy. Homepage widgets and linked apps send their own
+# bearer token to /api/*.
+parcels.example.com {
+	reverse_proxy pocket-parcels:8080
+}
