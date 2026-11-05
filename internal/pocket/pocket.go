@@ -510,11 +510,23 @@ func (c *Client) Messages(ctx context.Context, category, q string, limit, offset
 	return out.Messages, out.More, nil
 }
 
-// MessageBody reads one message with its text and HTML.
+// MessageBody reads one message with its text and HTML. Pocket Mail answers
+// {"message": {…}, "text": "…", "html": "…"}.
 func (c *Client) MessageBody(ctx context.Context, id int64) (*MessageFull, error) {
-	var out MessageFull
-	if err := c.do(ctx, http.MethodGet, fmt.Sprintf("/api/v1/messages/%d", id), nil, nil, &out); err != nil {
+	var raw struct {
+		Message *Message `json:"message"`
+		Text    string   `json:"text"`
+		HTML    string   `json:"html"`
+	}
+	if err := c.do(ctx, http.MethodGet, fmt.Sprintf("/api/v1/messages/%d", id), nil, nil, &raw); err != nil {
 		return nil, err
+	}
+	out := MessageFull{Text: raw.Text, HTML: raw.HTML}
+	if raw.Message != nil {
+		out.Message = *raw.Message
+	}
+	if out.ID == 0 {
+		out.ID = id
 	}
 	return &out, nil
 }

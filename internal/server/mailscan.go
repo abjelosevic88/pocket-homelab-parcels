@@ -222,6 +222,13 @@ func (s *Server) mailNews(ctx context.Context, uid int64, p *store.Parcel, sh tr
 	if p.OrderNumber == "" && sh.Order != "" {
 		p.OrderNumber = sh.Order
 	}
+	if p.Shop == "" && sh.Shop != "" {
+		p.Shop = sh.Shop
+	}
+	// a name made up for want of one gives way to the email's
+	if sh.Title != "" && (p.Title == "Parcel" || p.Title == defaultTitle(store.Parcel{Carrier: p.Carrier})) {
+		p.Title = sh.Title
+	}
 	if sh.Status == "" {
 		_ = s.store.UpdateParcel(ctx, uid, p)
 		return false
