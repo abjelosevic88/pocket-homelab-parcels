@@ -68,4 +68,4 @@ Events on the Core bus (each with `user_email`, `parcel_id`, `title`, `tracking_
 
 ## Settings, data
 
-`GET/PUT /settings`, `GET /settings/system`, `POST /integrations/test {which}` (an app slug, `17track` — answers the quota left —, `cainiao`, `openai`, `notify`), `POST /notify/test`, `POST /notify/check` (send today's reminders now), `GET/POST/DELETE /tokens`, `GET /backup` (admin), `GET /export.json`, `GET /export.csv` (one row per parcel), `POST /import` (an export; importing the same file twice adds nothing). Health: `GET /healthz`, `/readyz`, `/metrics`.
+`GET/PUT /settings`, `GET /settings/system`, `POST /integrations/test {which}` (an app slug, `17track` — answers the quota left —, `cainiao`, `openai`, `notify`), `POST /notify/test`, `POST /notify/check` (send today's reminders now), `GET/POST/DELETE /tokens`, `GET /backup` (admin), `GET /export.json`, `GET /export.csv` (one row per parcel), `POST /import` (an export; importing the same file twice adds nothing), `GET /pocket/portable` (Pocket Move can copy your parcels out and bring them in: `move:export` / `move:import` links). Health: `GET /healthz`, `/readyz`, `/metrics`.
