@@ -93,3 +93,20 @@ func TestExtract(t *testing.T) {
 		t.Error("LooksLikeShipping")
 	}
 }
+
+func TestFindNumberInLine(t *testing.T) {
+	cases := []struct{ line, number, rest string }{
+		{"RR123456785CN Headphones", "RR123456785CN", "Headphones"},
+		{"headphones rr 123 456 785 cn", "RR123456785CN", "headphones"},
+		{"Lamp from IKEA 00340434161094042557", "00340434161094042557", "Lamp from IKEA"},
+		{"Tracking number: JJD0012345678901234", "JJD0012345678901234", ""},
+		{"GPS tracking tag - 1Z999AA10123456784.", "1Z999AA10123456784", "GPS tracking tag"},
+		{"Order 12345 arrives 2026-12-01", "", "Order 12345 arrives 2026-12-01"},
+		{"Call 061 123 456", "", "Call 061 123 456"},
+	}
+	for _, c := range cases {
+		if n, rest := FindNumber(c.line); n != c.number || rest != c.rest {
+			t.Errorf("FindNumber(%q) = %q, %q; want %q, %q", c.line, n, rest, c.number, c.rest)
+		}
+	}
+}

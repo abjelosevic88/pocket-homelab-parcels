@@ -360,3 +360,76 @@ func firstN(s string, n int) string {
 	}
 	return s[:n]
 }
+
+// FindNumber finds the tracking number in a line someone typed
+// ("RR123456785CN headphones", "Lamp from IKEA 00340434161094042557") and
+// gives back the rest of the line, a tracking word such as "Tracking
+// number:" left out. A number its shape names a carrier for comes first;
+// else a word of at least eight digits (ten when it has dashes, so a date is
+// never one). "" when the line has none.
+func FindNumber(line string) (number, rest string) {
+	up := asciiUpper(line)
+	if loc := candidates.FindStringIndex(up); loc != nil {
+		if n := Normalize(up[loc[0]:loc[1]]); ValidNumber(n) {
+			return n, around(line[:loc[0]], line[loc[1]:])
+		}
+	}
+	words := strings.Fields(line)
+	best, digits := -1, 0
+	for i, w := range words {
+		t := strings.Trim(w, `.,;:()[]{}"'!?`)
+		if !lineTokenRe.MatchString(t) {
+			continue
+		}
+		n := Normalize(t)
+		need := 8
+		if strings.Contains(t, "-") {
+			need = 10
+		}
+		if !ValidNumber(n) || !hasDigits(n, need) || looksLikeJunk(n) {
+			continue
+		}
+		if d := countDigits(n); d > digits {
+			best, digits = i, d
+		}
+	}
+	if best < 0 {
+		return "", strings.Join(words, " ")
+	}
+	number = Normalize(strings.Trim(words[best], `.,;:()[]{}"'!?`))
+	return number, around(strings.Join(words[:best], " "), strings.Join(words[best+1:], " "))
+}
+
+var lineTokenRe = regexp.MustCompile(`^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`)
+
+// asciiUpper upper-cases ASCII letters only, so every index stays where it was.
+func asciiUpper(s string) string {
+	b := []byte(s)
+	for i, c := range b {
+		if c >= 'a' && c <= 'z' {
+			b[i] = c - 'a' + 'A'
+		}
+	}
+	return string(b)
+}
+
+func countDigits(s string) int {
+	d := 0
+	for _, r := range s {
+		if r >= '0' && r <= '9' {
+			d++
+		}
+	}
+	return d
+}
+
+// around joins what is left of a line on both sides of its number, without
+// the tracking word right before it ("Tracking number:") or dangling
+// punctuation.
+func around(before, after string) string {
+	before = keywordAtEnd.ReplaceAllString(before, "")
+	s := strings.Join(strings.Fields(before+" "+after), " ")
+	return strings.Trim(s, " -–—:,;.·|#")
+}
+
+var keywordAtEnd = regexp.MustCompile(`(?i)` + numberKeywords.String()[4:] + `[\s:：#.\-–—]*$`)

@@ -70,7 +70,7 @@ Set `CORE_URL` and `CORE_REGISTRATION_KEY` and Parcels joins the box: people sig
 | Pocket Documents | the invoice, customs papers or return label kept with a parcel | `documents:read` |
 | Pocket AI | reads the shipping emails patterns miss; the Ask button on every page | inference |
 
-Other apps can read your parcels (`parcels:read`: Pocket AI's "what arrives today?" and the morning briefing, Pocket Day's journal) or add them for you (`parcels:write`: an order confirmation, a shipping email). Events on the bus: `parcels.added`, `parcels.status_changed`, `parcels.out_for_delivery`, `parcels.ready_for_pickup`, `parcels.delivered`, `parcels.problem`, `parcels.return_due`, `parcels.found_in_mail`. Without Core every connection can be made directly with a URL and a token; the Core-only choices stay visible, greyed out.
+Other apps can read your parcels (`parcels:read`: Pocket AI's "what arrives today?" and the morning briefing, Pocket Day's journal) or add them for you (`parcels:write`: an order confirmation, a shipping email). Pocket Search finds your parcels (`!parcels`, `!parcel` or `!track`), Pocket Day writes down what was delivered, sent or expected that day, Pocket Hub shows what is on its way and what has a problem, and a quick line with a tracking number in Pocket Hub becomes a parcel to follow (`pocket:search`, `pocket:day`, `pocket:widget`, `pocket:capture`). Events on the bus: `parcels.added`, `parcels.status_changed`, `parcels.out_for_delivery`, `parcels.ready_for_pickup`, `parcels.delivered`, `parcels.problem`, `parcels.return_due`, `parcels.found_in_mail`. Without Core every connection can be made directly with a URL and a token; the Core-only choices stay visible, greyed out.
 
 ## Develop
 

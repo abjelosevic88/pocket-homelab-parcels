@@ -238,11 +238,12 @@ func (s *Server) registerWithCore(ctx context.Context) error {
 		Slug: "parcels", Name: "Pocket Parcels",
 		Description: "Follow every parcel in one place: paste a tracking number (or let it find them in your email) and see where each parcel is, when it should arrive and a push when it is out for delivery, ready to pick up or delivered. Remembers what you ordered, from where and what it cost, and the last day to send something back.",
 		Icon:        "/favicon.svg", Version: Version,
-		URL: s.cfg.CoreAppURL, PublicURL: s.cfg.BaseURL, HealthPath: "/healthz", EnvPrefix: "PARCELS",
-		Publishes: eventTopics,
-		Offers:    linkOffers,
-		Portable:  portable,
-		Uses:      append(linkUses(), core.InferenceUse()),
+		URL: s.cfg.CoreAppURL, PublicURL: s.cfg.BaseURL, HealthPath: "/healthz", EnvPrefix: "PARCELS", Category: "Home",
+		Publishes:    eventTopics,
+		Offers:       linkOffers,
+		Portable:     portable,
+		Capabilities: capabilities,
+		Uses:         append(linkUses(), core.InferenceUse()),
 	}
 	if s.cfg.BaseURL != "" {
 		m.OIDC = &core.OIDCRequest{RedirectURIs: []string{s.oidcCallbackURL()}}

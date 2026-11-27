@@ -216,8 +216,10 @@ func (s *Store) ParcelByExternal(ctx context.Context, uid int64, source, ext str
 	return scanParcel(s.DB.QueryRowContext(ctx, `SELECT `+parcelCols+` FROM parcels WHERE user_id = ? AND source = ? AND external_id = ? AND external_id != ''`, uid, source, ext))
 }
 
-// CreateParcel adds a parcel for a person.
-func (s *Store) CreateParcel(ctx context.Context, uid int64, p *Parcel) error {
+// CreateParcel adds a parcel for a person. The after hooks run in the same
+// transaction once the parcel has its id (a capture's receipt); an error
+// from one adds nothing.
+func (s *Store) CreateParcel(ctx context.Context, uid int64, p *Parcel, after ...func(*sql.Tx) error) error {
 	now := Now()
 	if p.Status == "" {
 		p.Status = "pending"
@@ -231,7 +233,12 @@ func (s *Store) CreateParcel(ctx context.Context, uid int64, p *Parcel) error {
 	if p.Currency == "" {
 		p.Currency = "EUR"
 	}
-	res, err := s.DB.ExecContext(ctx, `INSERT INTO parcels (user_id, title, tracking_number, carrier, direction, shop, order_number, ordered_on, price, extra_cost, currency,
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	res, err := tx.ExecContext(ctx, `INSERT INTO parcels (user_id, title, tracking_number, carrier, direction, shop, order_number, ordered_on, price, extra_cost, currency,
 		status, status_text, status_at, location, expected_on, expected_until, expected_manual, delivered_at, return_by, return_state, notes, archived,
 		provider, provider_ref, checked_at, next_check_at, check_error, source, external_id, mail_message_id,
 		wish_id, wish_title, money_tx_id, money_tx_label, extra_tx_id, inventory_item_id, contact_id, contact_name, created_at, updated_at)
@@ -243,7 +250,18 @@ func (s *Store) CreateParcel(ctx context.Context, uid int64, p *Parcel) error {
 	if err != nil {
 		return conflict(err)
 	}
-	p.ID, _ = res.LastInsertId()
+	id, _ := res.LastInsertId()
+	p.ID = id
+	for _, hook := range after {
+		if err := hook(tx); err != nil {
+			p.ID = 0
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		p.ID = 0
+		return err
+	}
 	p.UserID, p.CreatedAt, p.UpdatedAt = uid, now, now
 	p.fill(time.Now())
 	return nil
@@ -357,6 +375,24 @@ func (s *Store) ArchiveDelivered(ctx context.Context, uid int64, days int) (int6
 		return 0, err
 	}
 	return res.RowsAffected()
+}
+
+// Carriers lists the carriers a person's parcels go with, by key.
+func (s *Store) Carriers(ctx context.Context, uid int64) ([]string, error) {
+	rows, err := s.DB.QueryContext(ctx, `SELECT DISTINCT carrier FROM parcels WHERE user_id = ? AND carrier != '' ORDER BY carrier`, uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []string{}
+	for rows.Next() {
+		var v string
+		if err := rows.Scan(&v); err != nil {
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, rows.Err()
 }
 
 // Shops lists the shops a person ordered from, most used first (suggestions).

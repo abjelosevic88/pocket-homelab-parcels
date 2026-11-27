@@ -62,6 +62,15 @@ Automatic, per person (Settings): a pick-up task when a parcel waits at a pick-u
 
 Offers `parcels:read` (`GET /auth/me`, `/overview`, `/summary`, `/parcels`, `/parcels/{id}`, `/parcels/{id}/events`, `/search`, `/shops`, `/carriers`, `/stats`, `/day/{date}`, `POST /detect`) and `parcels:write` (`POST /parcels`, `PUT|DELETE /parcels/{id}`, `POST /parcels/{id}/events|check`). An app may change, remove or add steps only to parcels it added itself (`source` = its slug).
 
+For Pocket Search, Pocket Day and Pocket Hub it also offers the four capabilities (`docs/capabilities.md` in Pocket Core), each opening only its own route; `parcels:read` and `parcels:write` do not open them:
+
+| Route | Scope | What it answers |
+|---|---|---|
+| `GET /pocket/search?q&limit` | `pocket:search` | Parcels by name, shop, carrier, tracking number, notes (and what `/search` finds); `kind` is `delivery` or `sent`, the snippet is the status, the carrier and the last step with its day, `url` is `/parcels/{id}` |
+| `GET /pocket/day/{date}?tz` | `pocket:day` | What was delivered (done), sent and expected that day, and the steps of the others ("Out for delivery", "At customs"); "1 parcel delivered, 1 expected" |
+| `GET /pocket/widget` | `pocket:widget` | Out for delivery, ready to pick up and arriving today first, then problems and parcels with no news for a while, then the rest on its way; "1 out for delivery, 3 on the way". Only what Parcels already keeps: it never asks a carrier or a tracking service |
+| `POST /pocket/capture {request_id, kind: parcel, title?, text}` | `pocket:capture` | A line with a tracking number becomes a parcel to follow, the rest of the line its name: added as by `POST /parcels` (carrier guessed, first check with the tracking service in the background), as the person's own. A line without a number, or a number already followed, is refused with a sentence; the same `request_id` answers the same parcel |
+
 Uses Pocket Mail `mail:read`, Pocket Money `accounts:read transactions:read transactions:write`, Pocket Wishlist `wishes:read wishes:write`, Pocket Inventory `items:read items:write`, Pocket Calendar `calendar:read calendar:write`, Pocket Tasks `tasks:write`, Pocket Contacts `contacts:read`, Pocket Documents `documents:read`, and Pocket AI for inference.
 
 Events on the Core bus (each with `user_email`, `parcel_id`, `title`, `tracking_number`, `carrier`, `shop`, `status`, `status_label`, `latest`, `location`, `expected_on`, `url`): `parcels.added`, `parcels.status_changed` (+ `previous_status`, `source`), `parcels.out_for_delivery`, `parcels.ready_for_pickup`, `parcels.delivered`, `parcels.problem`, `parcels.return_due` (`return_by`, `days_left`), `parcels.found_in_mail` (`count`).

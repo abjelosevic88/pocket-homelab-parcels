@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -395,8 +396,9 @@ func (s *Server) handleCreateParcel(w http.ResponseWriter, r *http.Request) {
 }
 
 // createParcel saves a new parcel, then in the background marks its wish
-// bought, checks it once and puts it on the calendar.
-func (s *Server) createParcel(ctx context.Context, uid int64, p *store.Parcel, st store.Settings) (*store.Parcel, error) {
+// bought, checks it once and puts it on the calendar. The after hooks run in
+// the transaction that adds it.
+func (s *Server) createParcel(ctx context.Context, uid int64, p *store.Parcel, st store.Settings, after ...func(*sql.Tx) error) (*store.Parcel, error) {
 	p.Title = defaultTitle(*p)
 	if p.Status == "" {
 		p.Status = track.StatusPending
@@ -405,7 +407,7 @@ func (s *Server) createParcel(ctx context.Context, uid int64, p *store.Parcel, s
 		p.DeliveredAt = time.Now().UTC().Format(time.RFC3339)
 	}
 	p.Provider = s.providerFor(st, *p)
-	if err := s.store.CreateParcel(ctx, uid, p); err != nil {
+	if err := s.store.CreateParcel(ctx, uid, p, after...); err != nil {
 		return nil, err
 	}
 	s.publish(ctx, uid, "parcels.added", parcelSubject(p.ID), s.eventPayload(*p))
@@ -897,7 +899,7 @@ func (s *Server) handleDay(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case p.Status == track.StatusDelivered && localDate(p.DeliveredAt) == date:
 			delivered = append(delivered, s.view(p, st, now))
-		case p.Active() && p.ExpectedOn != "" && p.ExpectedOn <= date && (p.ExpectedUntil == "" && p.ExpectedOn == date || p.ExpectedUntil >= date):
+		case expectedOnDay(p, date):
 			expected = append(expected, s.view(p, st, now))
 		}
 		if p.Direction == "out" && (p.OrderedOn == date || p.OrderedOn == "" && localDate(p.CreatedAt) == date) {
